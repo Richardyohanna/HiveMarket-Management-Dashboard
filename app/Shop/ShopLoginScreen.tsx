@@ -23,6 +23,7 @@ import {
   ShimmerButton,
   shopTheme,
 } from "../../hivemarket-shop-dashboard/app/Shop/components/ui";
+import { chatSocketService } from '../../hivemarket-shop-dashboard/src/api/chatSocket';
 
 const ShopLoginScreen = () => {
   const isDark = useColorScheme() === "dark";
@@ -44,6 +45,11 @@ const ShopLoginScreen = () => {
       const res = await loginShopApi({ email: email.trim(), password: password.trim() });
       setShop(res.shop);
       setAuthenticated(true);
+
+       await chatSocketService.connect(res.shop.id).then(() => {
+              console.log("[Login] WebSocket connection established for user:", res.shop.id);
+        });
+
       router.replace("/(shop)/DashboardScreen");
     } catch (error: any) {
       Alert.alert("Login Failed", error.message || "Something went wrong.");

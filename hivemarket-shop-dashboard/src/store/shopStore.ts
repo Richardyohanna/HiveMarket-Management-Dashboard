@@ -34,6 +34,10 @@ const initialState = {
   createdAt: "",
 
   isAuthenticated: false,
+
+  pendingCount: 0,
+  inTransitCount: 0,
+  deliveredCount: 0
 };
 
 export const shopStore = create<ShopStoreData>((set) => ({
@@ -57,6 +61,9 @@ export const shopStore = create<ShopStoreData>((set) => ({
       university: value.university ?? state.university,
       areaName: value.areaName ?? state.areaName,
       banner: value.banner ?? state.banner,
+      pendingCount: value.pendingCount ?? state.pendingCount,
+      inTransitCount: value.inTransitCount ?? state.inTransitCount,
+      deliveredCount: value.deliveredCount ?? state.deliveredCount
     })),
 
   setIsOpen: (value: boolean) => set({isOpen: value}),

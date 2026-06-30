@@ -12,7 +12,7 @@ import {
 } from "../../src/types/shop";
 import { getToken } from "../services/authStorage";
 
-const BASE_URL = `${localURL}/api/shops`;
+const BASE_URL = `${localURL}/api/shop`;
 const AUTH_URL = `${localURL}/api/auth`
 const PRODUCTS_URL = `${localURL}/api/products`;
 
@@ -100,7 +100,7 @@ export async function registerShopApi(
 export async function loginShopApi(
   data: ShopLoginRequest
 ): Promise<ShopAuthResponse> {
-  const response = await fetchWithTimeout(`${AUTH_URL}/login`, {
+  const response = await fetchWithTimeout(`${AUTH_URL}/shop/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(data),
@@ -286,4 +286,31 @@ export async function uploadShopProductImagesApi(
   const text = await response.text();
   if (!response.ok) throw new Error(text || "Failed to upload product images");
   return JSON.parse(text);
+}
+
+export async function openToggle(shopId: string, isOpen: boolean) {
+
+  const token = await getToken();
+
+  if(token == null) {
+    console.log("Please login to be able to perform this function");
+    return;
+  }
+
+  const response = await fetch(`${BASE_URL}/open?shopId=${shopId}&isOpen=${isOpen}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },    
+  });
+
+  if(!response.ok){
+    throw new Error("THere is an error in performing the open and close toggle from the backend")
+  }
+  const result = await response.json();
+
+  console.log("THis is the result", result);
+
+  return result;
 }

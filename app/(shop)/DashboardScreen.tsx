@@ -1,4 +1,5 @@
-import { getShopFollowersApi, getShopStatsApi } from "../../hivemarket-shop-dashboard/src/api/shopApi";
+
+import { getShopFollowersApi, getShopStatsApi, openToggle } from "../../hivemarket-shop-dashboard/src/api/shopApi";
 import { shopStore } from "../../hivemarket-shop-dashboard/src/store/shopStore";
 import { Follower, ShopStats } from "../../hivemarket-shop-dashboard/src/types/shop";
 import { router } from "expo-router";
@@ -24,7 +25,236 @@ const PRIMARY_SOFT = "#e8f5e9";
 const money = (n: number) => "₦" + n.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // ─────────────────────────────────────────────
-// Wallet sub-component (dashboard-native style)
+// Clickable Stat Tile (compact, modern)
+// ─────────────────────────────────────────────
+const ClickableStatTile = ({
+  label,
+  value,
+  emoji,
+  isDark,
+  theme,
+  onPress,
+}: {
+  label: string;
+  value: string | number;
+  emoji: string;
+  isDark: boolean;
+  theme: any;
+  onPress: () => void;
+}) => (
+  <Pressable
+    onPress={onPress}
+    style={[statTileStyles.tile, {
+      backgroundColor: isDark ? "#1e293b" : "#fff",
+      borderColor: isDark ? "#334155" : "#e4f0e4",
+    }]}
+  >
+    <View style={statTileStyles.header}>
+      <Text style={statTileStyles.emoji}>{emoji}</Text>
+      <Text style={[statTileStyles.label, { color: theme.subText }]}>{label}</Text>
+    </View>
+    <Text style={[statTileStyles.value, { color: "#008100" }]}>{value}</Text>
+    <Text style={[statTileStyles.arrow, { color: theme.readColor }]}>→</Text>
+  </Pressable>
+);
+
+const statTileStyles = StyleSheet.create({
+  tile: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 6,
+    position: "relative",
+    width: "100%"
+  },
+  header: { flexDirection: "row", alignItems: "center", gap: 6 },
+  emoji: { fontSize: 18 },
+  label: { fontSize: 11, fontWeight: "600" },
+  value: { fontSize: 20, fontWeight: "900", letterSpacing: -0.5 },
+  arrow: { position: "absolute", top: 8, right: 8, fontSize: 16, fontWeight: "700" },
+});
+
+// ─────────────────────────────────────────────
+// Followers List Section (organized)
+// ─────────────────────────────────────────────
+const FollowersSection = ({
+  followers,
+  isDark,
+  theme,
+  totalFollowers,
+}: {
+  followers: Follower[];
+  isDark: boolean;
+  theme: any;
+  totalFollowers: number;
+}) => {
+  // Group followers by university
+  const groupedFollowers = followers.reduce((acc, follower) => {
+    const university = follower.university || "Unknown Campus";
+    if (!acc[university]) {
+      acc[university] = [];
+    }
+    acc[university].push(follower);
+    return acc;
+  }, {} as Record<string, Follower[]>);
+
+  return (
+    <View style={followerStyles.container}>
+      <View style={followerStyles.header}>
+        <Text style={[followerStyles.title, { color: theme.text }]}>👥 Followers</Text>
+        <Text style={[followerStyles.count, { color: "#008100" }]}>{totalFollowers}</Text>
+      </View>
+
+      {Object.entries(groupedFollowers).slice(0, 3).map(([university, unis]) => (
+        <View key={university} style={followerStyles.universityGroup}>
+          <Text style={[followerStyles.universityLabel, { color: theme.readColor }]}>
+            📍 {university}
+          </Text>
+          <View style={followerStyles.avatarRow}>
+            {unis.slice(0, 5).map((f, i) => (
+              <View key={f.id} style={followerStyles.avatarWrapper}>
+                {f.profile_picture ? (
+                  <Image source={{ uri: f.profile_picture }} style={followerStyles.avatar} />
+                ) : (
+                  <View style={[followerStyles.avatar, { 
+                    backgroundColor: "#008100",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }]}>
+                    <Text style={{ fontSize: 12, color: "#fff", fontWeight: "700" }}>
+                      {f.full_name?.charAt(0) || "F"}
+                    </Text>
+                  </View>
+                )}
+                <Text 
+                  style={[followerStyles.name, { color: theme.text }]}
+                  numberOfLines={1}
+                >
+                  {f.full_name?.split(" ")[0] || "User"}
+                </Text>
+              </View>
+            ))}
+            {unis.length > 5 && (
+              <View style={followerStyles.moreWrapper}>
+                <Text style={[followerStyles.moreText, { color: theme.text }]}>
+                  +{unis.length - 5}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      ))}
+
+      {followers.length > 10 && (
+        <Pressable style={followerStyles.viewAll}>
+          <Text style={[followerStyles.viewAllText, { color: "#008100" }]}>
+            View all {totalFollowers} followers →
+          </Text>
+        </Pressable>
+      )}
+    </View>
+  );
+};
+
+const followerStyles = StyleSheet.create({
+  container: { gap: 12, marginBottom: 18 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 2 },
+  title: { fontSize: 14, fontWeight: "800", letterSpacing: -0.3 },
+  count: { fontSize: 18, fontWeight: "900" },
+  universityGroup: { gap: 8 },
+  universityLabel: { fontSize: 11, fontWeight: "600", marginLeft: 2 },
+  avatarRow: { flexDirection: "row", gap: 12, alignItems: "center" },
+  avatarWrapper: { alignItems: "center", gap: 4 },
+  avatar: { width: 42, height: 42, borderRadius: 21, overflow: "hidden" },
+  name: { fontSize: 10, fontWeight: "600", width: 45, textAlign: "center" },
+  moreWrapper: { 
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: "#008100",
+    alignItems: "center", justifyContent: "center",
+  },
+  moreText: { fontSize: 12, fontWeight: "700" },
+  viewAll: { marginTop: 4, paddingVertical: 8 },
+  viewAllText: { fontSize: 12, fontWeight: "700", textAlign: "center" },
+});
+
+// ─────────────────────────────────────────────
+// Order Stats Section (compact, clickable)
+// ─────────────────────────────────────────────
+const OrderStatsSection = ({
+  pendingCount,
+  inTransitCount,
+  deliveredCount,
+  isDark,
+  theme,
+}: {
+  pendingCount: number;
+  inTransitCount: number;
+  deliveredCount: number;
+  isDark: boolean;
+  theme: any;
+}) => (
+  <View style={orderStatsStyles.container}>
+    <Text style={[orderStatsStyles.title, { color: theme.text }]}>📦 Order Stats</Text>
+    <View style={orderStatsStyles.grid}>
+      <Pressable
+        onPress={() => router.push("/OrderScreen/OrdersScreen?status=IN_PROGRESS")}
+        style={[orderStatsStyles.statCard, {
+          backgroundColor: isDark ? "#3a2600" : "#fff3e0",
+          borderColor: isDark ? "#663300" : "#ffe0b2",
+        }]}
+      >
+        <Text style={orderStatsStyles.statEmoji}>⏳</Text>
+        <Text style={[orderStatsStyles.statValue, { color: "#e65100" }]}>{pendingCount}</Text>
+        <Text style={[orderStatsStyles.statLabel, { color: "#e65100" }]}>Pending</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => router.push("/OrderScreen/OrdersScreen?status=IN_TRANSIT")}
+        style={[orderStatsStyles.statCard, {
+          backgroundColor: isDark ? "#1e3a3a" : "#e0f2f1",
+          borderColor: isDark ? "#2d5a5a" : "#b2dfdb",
+        }]}
+      >
+        <Text style={orderStatsStyles.statEmoji}>🚚</Text>
+        <Text style={[orderStatsStyles.statValue, { color: "#00695c" }]}>{inTransitCount}</Text>
+        <Text style={[orderStatsStyles.statLabel, { color: "#00695c" }]}>In Transit</Text>
+      </Pressable>
+
+      <Pressable
+        onPress={() => router.push("/OrderScreen/OrdersScreen?status=DELIVERED")}
+        style={[orderStatsStyles.statCard, {
+          backgroundColor: isDark ? "#0a2e0a" : "#e8f5e9",
+          borderColor: isDark ? "#2d5a2d" : "#c8e6c9",
+        }]}
+      >
+        <Text style={orderStatsStyles.statEmoji}>✓</Text>
+        <Text style={[orderStatsStyles.statValue, { color: "#008100" }]}>{deliveredCount}</Text>
+        <Text style={[orderStatsStyles.statLabel, { color: "#008100" }]}>Delivered</Text>
+      </Pressable>
+    </View>
+  </View>
+);
+
+const orderStatsStyles = StyleSheet.create({
+  container: { gap: 12, marginBottom: 18 },
+  title: { fontSize: 14, fontWeight: "800", letterSpacing: -0.3 },
+  grid: { flexDirection: "row", gap: 10 },
+  statCard: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 6,
+  },
+  statEmoji: { fontSize: 20 },
+  statValue: { fontSize: 18, fontWeight: "900" },
+  statLabel: { fontSize: 10, fontWeight: "700" },
+});
+
+// ─────────────────────────────────────────────
+// Wallet Card (dashboard-native style)
 // ─────────────────────────────────────────────
 const WalletCard = ({
   userId,
@@ -102,9 +332,7 @@ const WalletCard = ({
 
   return (
     <>
-      {/* Wallet card — same green-card style as the followers highlight */}
       <View style={[wStyles.card, { backgroundColor: GREEN }]}>
-        {/* Top row: label + eye toggle */}
         <View style={wStyles.topRow}>
           <Text style={wStyles.cardLabel}>💰 My Wallet</Text>
           <Pressable onPress={() => setBalanceVisible((v) => !v)} hitSlop={10} style={wStyles.eyeBtn}>
@@ -112,7 +340,6 @@ const WalletCard = ({
           </Pressable>
         </View>
 
-        {/* Balance + earned row */}
         <View style={wStyles.balanceRow}>
           <View style={wStyles.balanceBlock}>
             <Text style={wStyles.balanceSubLabel}>Current Balance</Text>
@@ -129,7 +356,6 @@ const WalletCard = ({
           </View>
         </View>
 
-        {/* Withdraw button */}
         <Pressable
           style={wStyles.withdrawBtn}
           onPress={() => setShowWithdraw(true)}
@@ -231,13 +457,6 @@ const wStyles = StyleSheet.create({
 // ─────────────────────────────────────────────
 // Main Dashboard
 // ─────────────────────────────────────────────
-interface DashboardScreenProps {
-  /** Pass true when the logged-in user has a seller role */
-  isSeller?: boolean;
-  /** The logged-in user's id (needed for wallet) */
-  userId?: string;
-}
-
 const DashboardScreen = () => {
   const isDark = useColorScheme() === "dark";
   const t = shopTheme(isDark);
@@ -248,9 +467,20 @@ const DashboardScreen = () => {
   const [stats, setStats] = useState<ShopStats | null>(null);
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  // Shop open / closed toggle state
   const [isOpen, setIsOpen] = useState<boolean>(shop.isOpen ?? true);
+  
+  // Order stats state
+  const [orderStats, setOrderStats] = useState({
+    pending: 0,
+    inTransit: 0,
+    delivered: 0,
+  });
 
+  const [pendingCount, setPendingCount] = useState<number>(shop.pendingCount );
+  const [inTransitCount, setinTransitCount] = useState<number>(shop.inTransitCount );
+  const [deliveredCount, setDeliveredCount] = useState<number>(shop.deliveredCount );
+
+  console.log("PendingCount ", pendingCount, " inTransitCount ", inTransitCount + " shop.pendingCOunt " , shop.pendingCount);
   const load = useCallback(async () => {
     if (!shop.id) return;
     try {
@@ -262,8 +492,15 @@ const DashboardScreen = () => {
       setFollowers(followersRes);
       shop.setFollowers(statsRes.followers);
       shop.setProductCount(statsRes.totalProducts);
+      
+      // Mock order stats - replace with real API call
+      setOrderStats({
+        pending: Math.floor(Math.random() * 10),
+        inTransit: Math.floor(Math.random() * 15),
+        delivered: statsRes.totalSales || 0,
+      });
     } catch (e) {
-      console.log("[v0] dashboard load failed", e);
+      console.log("[dashboard] load failed", e);
     }
   }, [shop.id]);
 
@@ -280,8 +517,8 @@ const DashboardScreen = () => {
   const handleToggleOpen = () => {
     const next = !isOpen;
     setIsOpen(next);
-    // Persist to store / API if your shopStore supports it
     if (shop.setIsOpen) shop.setIsOpen(next);
+    openToggle(shop.id, next);
     Alert.alert(
       next ? "Shop is now Open 🟢" : "Shop is now Closed 🔴",
       next
@@ -322,7 +559,6 @@ const DashboardScreen = () => {
             </Text>
           </View>
 
-          {/* Open / Close toggle — replaces the old ＋ button */}
           <Pressable
             onPress={handleToggleOpen}
             style={[
@@ -342,66 +578,74 @@ const DashboardScreen = () => {
           </Pressable>
         </View>
 
+        {/* ── Wallet card ── */}
+        {userId && <WalletCard userId={userId} isDark={isDark} t={t} />}
 
-        {/* ── Wallet card (sellers only) ── */}
-        { userId && (
-          <WalletCard userId={userId} isDark={isDark} t={t} />
-        )}
+        {/* ── Followers Section ──
+        <FollowersSection
+          followers={followers}
+          isDark={isDark}
+          theme={t}
+          totalFollowers={stats?.followers ?? shop.followers}
+        />  */}
 
-        {/* ── Stat grid ──         <StatCard
-            label="Revenue"
-            value={money(stats?.revenue ?? 0)}
-            accent
+        {/* ── Order Stats Section ── */}
+        <OrderStatsSection
+          pendingCount={pendingCount}//}
+          inTransitCount={inTransitCount } //orderStats.inTransit}
+          deliveredCount={deliveredCount} // orderStats.delivered}
+          isDark={isDark}
+          theme={t}
+        />
+
+        {/* ── Key Metrics (Clickable) ── */}
+        <Text style={[s.sectionTitle, { color: t.text }]}>📊 Key Metrics</Text>
+        <View style={s.metricsGrid}>
+          <ClickableStatTile
+            label="Products"
+            value={String(stats?.totalProducts ?? shop.productCount)}
+            emoji="📦"
             isDark={isDark}
-            wide
-          />   */}
-        <View style={s.grid}>
-          <StatCard label="Products" value={String(stats?.totalProducts ?? shop.productCount)} isDark={isDark} />
-          <StatCard label="Total views" value={String(stats?.totalViews ?? 0)} isDark={isDark} />
-          <StatCard label="Sales" value={String(stats?.totalSales ?? 0)} isDark={isDark} />
-          <StatCard label="Reactions" value={String(stats?.reactions ?? 0)} isDark={isDark} />
-  
+            theme={t}
+            onPress={() => router.push("/(shop)/ProductsScreen")}
+          />
+          <ClickableStatTile
+            label="Total Views"
+            value={String(stats?.totalViews ?? 0)}
+            emoji="👁️"
+            isDark={isDark}
+            theme={t}
+            onPress={() => router.push("/(shop)/AnalyticsScreen")}
+          />
+         {/*} <ClickableStatTile
+            label="Reactions"
+            value={String(stats?.reactions ?? 0)}
+            emoji="❤️"
+            isDark={isDark}
+            theme={t}
+            onPress={() => router.push("/(shop)/ReactionsScreen")}
+          /> */}
+          <ClickableStatTile
+            label="Followers"
+            value={String(stats?.followers ?? shop.followers)}
+            emoji="👥"
+            isDark={isDark}
+            theme={t}
+            onPress={() => router.push("/(shop)/FollowersDetailScreen")}
+          />
         </View>
-
-        {/* ── Followers highlight ── */}
-        <View style={[s.followCard, { backgroundColor: GREEN }]}>
-          <View>
-            <Text style={s.followLabel}>Followers</Text>
-            <Text style={s.followValue}>
-              {(stats?.followers ?? shop.followers).toLocaleString()}
-            </Text>
-          </View>
-          {/* Stacked follower avatars */}
-          <View style={s.avatarStack}>
-            {followers.slice(0, 4).map((f, i) => (
-              <View key={f.id} style={[s.stackItem, { right: i * 18 }]}>
-                {f.profile_picture ? (
-                  <Image source={{ uri: f.profile_picture }} style={s.stackImg} />
-                ) : (
-                  <Text style={{ fontSize: 14 }}>👤</Text>
-                )}
-              </View>
-            ))}
-            {followers.length > 4 && (
-              <View style={[s.stackMore, { right: 4 * 18 }]}>
-                <Text style={s.stackMoreText}>+{followers.length - 4}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
 
         {/* ── Quick actions ── */}
-        <Text style={[s.sectionTitle, { color: t.text }]}>Quick actions</Text>
+        <Text style={[s.sectionTitle, { color: t.text }]}>⚡ Quick Actions</Text>
         <View style={s.actions}>
           <ActionTile
-            label="Add product"
+            label="Add Product"
             icon="➕"
             onPress={() => router.push("/(shop)/ProductFormScreen")}
             t={t}
           />
           <ActionTile
-            label="My products"
+            label="My Products"
             icon="📦"
             onPress={() => router.push("/(shop)/ProductsScreen")}
             t={t}
@@ -413,48 +657,21 @@ const DashboardScreen = () => {
             t={t}
           />
           <ActionTile
-            label="Shop settings"
+            label="Settings"
             icon="⚙️"
             onPress={() => router.push("/(shop)/ShopProfileScreen")}
             t={t}
           />
         </View>
 
-        {/* ── Recent followers list ── */}
-        <Text style={[s.sectionTitle, { color: t.text }]}>Recent followers</Text>
-        {followers.length === 0 ? (
-          <Text style={[s.empty, { color: t.subText }]}>No followers yet.</Text>
-        ) : (
-          followers.slice(0, 6).map((f) => (
-            <View
-              key={f.id}
-              style={[s.followerRow, { backgroundColor: t.card, borderColor: t.border }]}
-            >
-              <View style={[s.followerAvatar, { borderColor: t.border }]}>
-                {f.profile_picture ? (
-                  <Image source={{ uri: f.profile_picture }} style={s.followerImg} />
-                ) : (
-                  <Text style={{ fontSize: 16 }}>👤</Text>
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.followerName, { color: t.text }]}>{f.full_name}</Text>
-                {f.university ? (
-                  <Text style={[s.followerSub, { color: t.subText }]}>{f.university}</Text>
-                ) : null}
-              </View>
-            </View>
-          ))
-        )}
-
-        <View style={{ height: 100 }} />
+        <View style={{ height: 60 }} />
       </ScrollView>
     </View>
   );
 };
 
 // ─────────────────────────────────────────────
-// Action tile
+// Action Tile
 // ─────────────────────────────────────────────
 const ActionTile = ({
   label,
@@ -481,11 +698,11 @@ export default DashboardScreen;
 // ─────────────────────────────────────────────
 // Styles
 // ─────────────────────────────────────────────
+
 const s = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, paddingBottom: 20 },
   scroll: { paddingHorizontal: 20, paddingTop: 64 },
 
-  /* ── Header ── */
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
   avatar: {
     width: 56,
@@ -501,7 +718,6 @@ const s = StyleSheet.create({
   shopName: { fontSize: 20, fontWeight: "900", letterSpacing: -0.4 },
   owner: { fontSize: 12 },
 
-  /* Open / Close toggle button */
   toggleBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -521,58 +737,22 @@ const s = StyleSheet.create({
     letterSpacing: -0.2,
   },
 
-  /* ── Followers card ── */
-  followCard: {
-    borderRadius: 22,
-    padding: 22,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 18,
-    overflow: "hidden",
-  },
-  followLabel: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: "600" },
-  followValue: { color: "#fff", fontSize: 38, fontWeight: "900", letterSpacing: -1 },
-  avatarStack: { flexDirection: "row", height: 38, width: 120, position: "relative" },
-  stackItem: {
-    position: "absolute",
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  stackImg: { width: "100%", height: "100%" },
-  stackMore: {
-    position: "absolute",
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(0,0,0,0.25)",
-    borderWidth: 2,
-    borderColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stackMoreText: { color: "#fff", fontSize: 11, fontWeight: "800" },
-
-  /* ── Stat grid ── */
-  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
-
-  /* ── Section titles ── */
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "800",
     letterSpacing: -0.3,
-    marginTop: 10,
+    marginTop: 16,
     marginBottom: 12,
   },
 
-  /* ── Quick action tiles ── */
+  metricsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 18,
+  },
+
   actions: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 12 },
   tile: {
     width: "47%",
@@ -584,28 +764,4 @@ const s = StyleSheet.create({
     marginBottom: 12,
   },
   tileLabel: { fontSize: 13, fontWeight: "700" },
-
-  /* ── Followers list ── */
-  empty: { fontSize: 13, paddingVertical: 16, textAlign: "center" },
-  followerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 10,
-  },
-  followerAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  followerImg: { width: "100%", height: "100%" },
-  followerName: { fontSize: 14, fontWeight: "700" },
-  followerSub: { fontSize: 12 },
 });

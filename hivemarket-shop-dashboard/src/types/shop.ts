@@ -60,6 +60,11 @@ export interface ShopResponse {
   walkTimeMinutes: number;
 
   createdAt: string;
+
+  pendingCount: number;
+  inTransitCount: number;
+  deliveredCount: number;
+
 }
 
 export interface ShopAuthResponse {
@@ -125,7 +130,13 @@ export interface ShopStoreData {
   walkTimeMinutes: number;
 
   createdAt: string;
+
+  pendingCount: number;
+  inTransitCount: number;
+  deliveredCount: number;
+
   isAuthenticated: boolean;
+
 
   setIsOpen: (value: boolean) => void;
   setShop: (value: Partial<ShopResponse>) => void;

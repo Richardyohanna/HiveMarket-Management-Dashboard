@@ -28,7 +28,7 @@ class ChatSocketService {
   private messageCallbacks: ((message: MessageResponse) => void)[] = [];
   private fileCallbacks: ((fileEvent: FileEvent) => void)[] = [];
   private connectionCallbacks: ((connected: boolean) => void)[] = [];
-  private sendMessageQueue: { buyerId: string; sellerId: string; message: string }[] = [];
+  private sendMessageQueue: { buyerId: string; sellerId: string; senderId: string; receiverId: string; message: string }[] = [];
   private productUpdateCallbacks: ((data: ReactionResponse) => void)[] = [];
 
   /**
@@ -150,8 +150,8 @@ class ChatSocketService {
 
           console.log("WebSocket connected for userId:", this.userId);
 
-        this.sendMessageQueue.forEach(({ buyerId, sellerId, message }) => {
-            this.sendMessage(buyerId, sellerId, message);
+        this.sendMessageQueue.forEach(({ buyerId, sellerId, senderId, receiverId, message }) => {
+            this.sendMessage(buyerId, sellerId, senderId, receiverId, message);
           });
 
         this.sendMessageQueue = [];
@@ -252,17 +252,21 @@ class ChatSocketService {
   public sendMessage(
     buyerId: string,
     sellerId: string,
+    senderId: string,
+    receiverId: string,
     message: string
   ): void {
     if (!this.client || !this.connected) {
       console.error('⚠️ WebSocket not connected');
-      this.sendMessageQueue.push({ buyerId, sellerId, message });
+      this.sendMessageQueue.push({ buyerId, sellerId, senderId, receiverId, message });
       return;
     }
 
     const payload = {
       buyerId,
       sellerId,
+      senderId,
+      receiverId,
       message,
     };
 
