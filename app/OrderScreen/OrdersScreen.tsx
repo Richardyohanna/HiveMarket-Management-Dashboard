@@ -141,7 +141,7 @@ const OrderCard = ({ order, isDark }: { order: Order; isDark: boolean }) => {
 
   return (
     <Pressable
-      onPress={() => router.push(`/OrderScreen/OrderScreenDetail?id=${order.OrderId}`)}
+      onPress={() => router.push(`/OrderScreen/OrderScreenDetail?orderId=${order.OrderId}&id=${formatOrderId(order.OrderId)}`)}
       style={({ pressed }) => [
         cardStyles.card,
         { backgroundColor: cardBg, borderColor, opacity: pressed ? 0.85 : 1 }

@@ -73,7 +73,10 @@ export interface OrderDetail {
   product: {
     id: string;
     name: string;
-    imageUrl: string | null;
+    imageUrl: {
+      id: number;
+      imageUrl: string;
+    };
     category: string;
     condition: string; // "New" | "Used - Like New" | "Used - Good"
     description: string;

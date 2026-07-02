@@ -143,7 +143,10 @@ const MOCK_DETAIL: OrderDetail = {
   product: {
     id: "PROD-089",
     name: "Nigerian Study Bible (New King James Version)",
-    imageUrl: null,
+    imageUrl: {
+      id: 1,
+      imageUrl: "https://example.com/images/nkjv-study-bible.jpg",
+    },
     category: "Books & Stationery",
     condition: "New",
     description:
@@ -430,7 +433,7 @@ const actionStyles = StyleSheet.create({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function OrderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, orderId } = useLocalSearchParams<{ id: string; orderId: string }>();
   const router = useRouter();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -443,11 +446,13 @@ export default function OrderDetailScreen() {
   const textPrimary = isDark ? "#f0f0f0" : "#1a1a1a";
   const textSecondary = isDark ? "#888" : "#777";
 
+  console.log(orderId, id);
+
 const fetchOrder = useCallback(async () => {
     setLoading(true);
 
     try {
-        const data = await getOrderDetail(id);
+        const data = await getOrderDetail(orderId);
 
         console.log("Order Detail", data);
 
@@ -542,7 +547,7 @@ const fetchOrder = useCallback(async () => {
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <Stack.Screen
         options={{
-          title: order.orderId,
+          title: id,
           headerStyle: { backgroundColor: isDark ? "#0d0d0d" : "#f2f2f2" },
           headerTintColor: isDark ? "#f0f0f0" : "#1a1a1a",
           headerShadowVisible: false,
@@ -559,7 +564,7 @@ const fetchOrder = useCallback(async () => {
             <Text style={heroStyles.heroEmoji}>{statusCfg.emoji}</Text>
             <View>
               <Text style={[heroStyles.heroStatus, { color: statusColor }]}>{statusCfg.label}</Text>
-              <Text style={[heroStyles.heroId, { color: isDark ? "#555" : "#aaa" }]}>{order.orderId}</Text>
+              <Text style={[heroStyles.heroId, { color: isDark ? "#555" : "#aaa" }]}>{id}</Text>
             </View>
           </View>
           <View style={[heroStyles.heroBadge, { backgroundColor: isDark ? "#0d0d0d22" : "#fff5", borderColor: isDark ? statusCfg.darkBorder : statusCfg.border }]}>
@@ -576,7 +581,7 @@ const fetchOrder = useCallback(async () => {
             <View style={[productStyles.imageWrap, { backgroundColor: isDark ? "#1e1e1e" : "#f5f5f5", borderColor: isDark ? "#2a2a2a" : "#ebebeb" }]}>
               {order.product.imageUrl ? (
                 <Image
-                  source={{ uri: order.product.imageUrl }}
+                  source={{ uri: order.product.imageUrl.imageUrl }}
                   style={productStyles.image}
                   resizeMode="cover"
                 />

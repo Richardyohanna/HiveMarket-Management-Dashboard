@@ -112,7 +112,7 @@ export default function ShopTabsLayout() {
         tabBarStyle,
         tabBarActiveTintColor: PRIMARY,
         tabBarInactiveTintColor: isDark ? "#475569" : "#94a3b8",
-        tabBarLabelStyle: { fontSize: 10, fontWeight: "700", letterSpacing: 0.2, marginTop: 2 },
+        tabBarLabelStyle: { fontSize: 9.3, fontWeight: "700", letterSpacing: 0.2, marginTop: 2 },
       }}
     >
       <Tabs.Screen
@@ -130,10 +130,11 @@ export default function ShopTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="ProductFormScreen"
+        name="NotificationScreen"
         options={{
-          title: "",
-          tabBarButton: () => <AddFAB isDark={isDark} />,
+          title: "Notifications",
+           tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} isDark={isDark} />,
+          //tabBarButton: () => <AddFAB isDark={isDark} />,
         }}
       />
       <Tabs.Screen

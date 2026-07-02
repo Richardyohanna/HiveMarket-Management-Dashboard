@@ -598,6 +598,36 @@ const DashboardScreen = () => {
           theme={t}
         />
 
+          {/* ── Quick actions ── */}
+        <Text style={[s.sectionTitle, { color: t.text }]}>⚡ Quick Actions</Text>
+        <View style={s.actions}>
+          <ActionTile
+            label="Add Product"
+            icon="➕"
+            onPress={() => router.push("/CreateProduct/ProductFormScreen")}
+            t={t}
+          />
+          <ActionTile
+            label="My Products"
+            icon="📦"
+            onPress={() => router.push("/(shop)/ProductsScreen")}
+            t={t}
+          />
+          <ActionTile
+            label="Messages"
+            icon="💬"
+            onPress={() => router.push("/(shop)/MessagesScreen")}
+            t={t}
+          />
+          <ActionTile
+            label="Settings"
+            icon="⚙️"
+            onPress={() => router.push("/(shop)/ShopProfileScreen")}
+            t={t}
+          />
+        </View>
+
+
         {/* ── Key Metrics (Clickable) ── */}
         <Text style={[s.sectionTitle, { color: t.text }]}>📊 Key Metrics</Text>
         <View style={s.metricsGrid}>
@@ -631,39 +661,11 @@ const DashboardScreen = () => {
             emoji="👥"
             isDark={isDark}
             theme={t}
-            onPress={() => router.push("/(shop)/FollowersDetailScreen")}
+            onPress={() => router.push("/Followers/FollowersScreen")}
           />
         </View>
 
-        {/* ── Quick actions ── */}
-        <Text style={[s.sectionTitle, { color: t.text }]}>⚡ Quick Actions</Text>
-        <View style={s.actions}>
-          <ActionTile
-            label="Add Product"
-            icon="➕"
-            onPress={() => router.push("/(shop)/ProductFormScreen")}
-            t={t}
-          />
-          <ActionTile
-            label="My Products"
-            icon="📦"
-            onPress={() => router.push("/(shop)/ProductsScreen")}
-            t={t}
-          />
-          <ActionTile
-            label="Messages"
-            icon="💬"
-            onPress={() => router.push("/(shop)/MessagesScreen")}
-            t={t}
-          />
-          <ActionTile
-            label="Settings"
-            icon="⚙️"
-            onPress={() => router.push("/(shop)/ShopProfileScreen")}
-            t={t}
-          />
-        </View>
-
+      
         <View style={{ height: 60 }} />
       </ScrollView>
     </View>

@@ -55,7 +55,7 @@ const ProductsScreen = () => {
 
   const onEdit = (item: RecentListingItem) => {
     router.push({
-      pathname: "/(shop)/ProductFormScreen",
+      pathname: "/CreateProduct/ProductFormScreen",
       params: {
         id: item.id,
         pName: item.pName,
